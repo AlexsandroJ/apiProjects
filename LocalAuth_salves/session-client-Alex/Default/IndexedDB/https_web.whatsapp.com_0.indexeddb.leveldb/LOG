@@ -1,4 +1,0 @@
-2025/04/27-09:05:53.758 3520 Reusing MANIFEST E:\Projetos\apiMicroSaaSWhatsapWeb\LocalAuth_salves\session-client-Alex\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
-2025/04/27-09:05:53.758 3520 Recovering log #587
-2025/04/27-09:05:53.779 3520 Reusing old log E:\Projetos\apiMicroSaaSWhatsapWeb\LocalAuth_salves\session-client-Alex\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000587.log 
-2025/04/27-09:05:58.198 32f0 Manual compaction at level-0 from '\x00\xc0\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\xc1\x00\x00\x00' @ 0 : 0; will stop at (end)
