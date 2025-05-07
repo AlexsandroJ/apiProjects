@@ -5,7 +5,7 @@ const profileSchema = new mongoose.Schema({
     bio: { type: String },
     avatarUrl: { type: String },
     location: { type: String },
-    age: { type: Number }
+    age: { type: String }
   });
 
 module.exports = mongoose.model('Profile', profileSchema);
