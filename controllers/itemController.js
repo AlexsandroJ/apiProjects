@@ -7,7 +7,7 @@ exports.createItem = async (req, res) => {
         const { name, type, price, description, available, image, stock } = req.body;
 
         // Encontrar o usuário e a categoria
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
         
         const cat = product.products.find(cat => cat.category === category );
@@ -32,7 +32,7 @@ exports.getItems = async (req, res) => {
     try {
         const { userId, category } = req.params;
 
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         const cat = product.products.find(cat => cat.category === category);
@@ -50,7 +50,7 @@ exports.updateItem = async (req, res) => {
         const { userId, category, name } = req.params;
         const updates = req.body;
 
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         const cat = product.products.find(cat => cat.category === category);
@@ -73,7 +73,7 @@ exports.deleteItem = async (req, res) => {
     try {
         const { userId, category, name } = req.params;
 
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         const cat = product.products.find(cat => cat.category === category);

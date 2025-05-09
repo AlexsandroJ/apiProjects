@@ -51,6 +51,24 @@ const clientSchema = new mongoose.Schema({
         type: String,
         default: "", // Valor padrão é uma string vazia (ou null, se preferir)
     },
+    // Campo novo: histórico de conversas com o assistente
+    history: [
+        {
+            role: {
+                type: String,
+                enum: ["user", "assistant"],
+                required: true,
+            },
+            content: {
+                type: String,
+                required: true,
+            },
+            timestamp: {
+                type: Date,
+                default: Date.now,
+            }
+        }
+    ],
 }, { timestamps: true }); // Adiciona campos createdAt e updatedAt automaticamente
 
 // Função para gerar um modelo com uma coleção personalizada

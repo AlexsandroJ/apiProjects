@@ -8,7 +8,7 @@ exports.createCity = async (req, res) => {
         const { name, neighborhoods } = req.body;
 
         // Verifica se o usuário existe
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
@@ -35,7 +35,7 @@ exports.getAllCities = async (req, res) => {
         const { userId } = req.params;
 
         // Busca o usuário e suas cidades
-        const product = await Products.findOne({ userId }).select('locations');
+        const product = await Products.findOne({  userId: userId }).select('locations');
         if (!product) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
@@ -52,7 +52,7 @@ exports.getCityByName = async (req, res) => {
         const { userId, cityName } = req.params;
 
         // Busca o usuário e sua cidade específica
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
@@ -75,7 +75,7 @@ exports.updateCity = async (req, res) => {
         const { newName, neighborhoods } = req.body;
 
         // Busca o usuário
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
@@ -106,7 +106,7 @@ exports.deleteCity = async (req, res) => {
         const { userId, cityName } = req.params;
 
         // Busca o usuário
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
@@ -133,7 +133,7 @@ exports.addNeighborhood = async (req, res) => {
         const { neighborhoodName } = req.body;
 
         // Busca o usuário
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
@@ -166,7 +166,7 @@ exports.removeNeighborhood = async (req, res) => {
         const { userId, cityName, neighborhoodName } = req.params;
 
         // Busca o usuário
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
@@ -199,7 +199,7 @@ exports.updateNeighborhood = async (req, res) => {
         const { newNeighborhoodName } = req.body;
 
         // Busca o usuário
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }

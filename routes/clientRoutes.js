@@ -120,7 +120,7 @@ router.get("/client", clientControllers.getAllClients);
  *       404:
  *         description: Cliente não encontrado
  */
-router.get("/client/:id", clientControllers.getClientById);
+router.get("/client/:phone", clientControllers.getClientById);
 
 /**
  * @swagger
@@ -163,7 +163,7 @@ router.get("/client/:id", clientControllers.getClientById);
  *       404:
  *         description: Cliente não encontrado
  */
-router.put("/client/:id", clientControllers.updateClient);
+router.put("/client/:phone", clientControllers.updateClient);
 
 /**
  * @swagger
@@ -184,6 +184,67 @@ router.put("/client/:id", clientControllers.updateClient);
  *       404:
  *         description: Cliente não encontrado
  */
-router.delete("/client/:id", clientControllers.deleteClient);
+router.delete("/client/:phone", clientControllers.deleteClient);
+
+/**
+ * @swagger
+ * /client/history/{phone}:
+ *   post:
+ *     summary: Adiciona uma nova interação ao histórico do cliente
+ *     tags: [Clients]
+ *     parameters:
+ *       - in: path
+ *         name: phone
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Número de telefone do cliente
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum:
+ *                   - user
+ *                   - assistant
+ *               content:
+ *                 type: string
+ *             example:
+ *               role: user
+ *               content: Olá, quero fazer um pedido.
+ *     responses:
+ *       200:
+ *         description: Histórico atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 history:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       role:
+ *                         type: string
+ *                       content:
+ *                         type: string
+ *                       timestamp:
+ *                         type: string
+ *                         format: date-time
+ *       400:
+ *         description: Erro nos dados fornecidos
+ *       404:
+ *         description: Cliente não encontrado
+ *       500:
+ *         description: Erro interno no servidor
+ */
+router.post("/client/history/:phone", clientControllers.addHistoryToClient);
 
 module.exports = router;

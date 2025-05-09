@@ -17,7 +17,7 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     // Verifica se o usuário existe
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email });
     if (!user) {
       return res.status(401).json({ error: 'sessionController: Credenciais inválidas.' });
     }
@@ -48,7 +48,7 @@ exports.login = async (req, res) => {
 exports.logout = async (req, res) => {
   try {
     const { token } = req.body;
-    const session = await Session.findOne({ token });
+    const session = await Session.findOne({ token: token });
 
     if (!session) {
       return res.status(401).json({ error: 'sessionController: Sessão inválida.' });
@@ -66,8 +66,9 @@ exports.logout = async (req, res) => {
 // Verificação de Token
 exports.checkToken = async (req, res) => {
   try {
-    const { userId } = req.body; // O middleware `authenticateToken` injeta o usuário no request
-    res.status(200).json({ userId, message: 'sessionController: Token válido.' });
+    const { userId } = req; // O middleware `authenticateToken` injeta o usuário no request
+    
+    res.status(200).json({ userId : userId, message: 'sessionController: Token válido.' });
   } catch (error) {
     res.status(401).json({ error: 'sessionController: Token inválido ou expirado.' });
   }

@@ -6,159 +6,159 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 describe('Testes das Rotas de Usuário', () => {
-  let userId;
-  let token;
+    let userId;
+    let token;
 
-  // Insere um usuário no banco de dados antes de cada teste
-  beforeEach(async () => {
-    // Limpeza
-    await User.deleteMany({});
+    // Limpa o banco e cria usuário antes de cada teste
+    beforeEach(async () => {
+        await User.deleteMany({});
 
-    const hashedPassword = await bcrypt.hash('password123', 10);
-    const user = await User.create({
-      name: 'John Doe',
-      email: 'john@example.com',
-      password: hashedPassword
+        const hashedPassword = await bcrypt.hash('password123', 10);
+        const user = await User.create({
+            name: 'John Doe',
+            email: 'john@example.com',
+            password: hashedPassword
+        });
+        userId = user._id.toString();;
+        token = jwt.sign({ userId: userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        
+    });
+  
+    // =============================
+    // 🧾 Cadastro de Usuário
+    // =============================
+    describe('Cadastro de Usuário', () => {
+        it('Deve criar um novo usuário com dados válidos', async () => {
+            const response = await request(app)
+                .post('/api/users')
+                .send({
+                    name: 'Jane',
+                    email: 'jane@example.com',
+                    password: 'password321'
+                });
+
+            expect(response.status).toBe(201);
+        });
+
+        it('Deve retornar erro 400 ao tentar criar usuário com dados inválidos', async () => {
+            const response = await request(app)
+                .post('/api/users')
+                .send({
+                    name: '',
+                    email: 'invalid-email',
+                    password: 'short'
+                });
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toBeDefined();
+        });
+
+        it('Deve retornar erro 400 ao tentar criar usuário com email duplicado', async () => {
+            const response = await request(app)
+                .post('/api/users')
+                .send({
+                    name: 'John Doe',
+                    email: 'john@example.com',
+                    password: 'password123'
+                });
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toBe('Email já registrado.');
+        });
+    });
+  
+    // =============================
+    // 🔐 Autenticação (JWT)
+    // =============================
+    describe('Autenticação (JWT)', () => {
+        it('Deve impedir atualização sem token', async () => {
+            const response = await request(app)
+                .put(`/api/users/${userId}`)
+                .send({ name: 'John Updated' });
+
+            expect(response.status).toBe(401);
+            expect(response.body.error).toBe('authMiddleware: Acesso negado. Token não fornecido.');
+        });
+
+        it('Deve impedir exclusão sem token', async () => {
+            const response = await request(app)
+                .delete(`/api/users/${userId}`);
+
+            expect(response.status).toBe(401);
+            expect(response.body.error).toBe('authMiddleware: Acesso negado. Token não fornecido.');
+        });
     });
 
-    // Gera um token JWT para o usuário
-    token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    userId = user._id;
-  });
+    // =============================
+    // 📝 Atualização de Usuário
+    // =============================
+    describe('Atualização de Usuário', () => {
+        it('Deve atualizar um usuário por ID com autenticação', async () => {
 
-  // Teste: Criar um usuário com dados válidos
-  it('Deve criar um novo usuário com dados válidos', async () => {
-    const response = await request(app)
-      .post('/api/users')
-      .send({
-        name: 'Jane',
-        email: 'janes@example.com',
-        password: 'password321'
-      });
 
-    expect(response.status).toBe(201);
-  });
+           const res = await request(app).get(`/api/users/${userId}`)
+                
 
-  // Teste: Atualizar um usuário por ID (com autenticação)
-  it('Deve atualizar um usuário por ID com autenticação', async () => {
-    const response = await request(app)
-      .put(`/api/users/${userId}`)
-      .set('Authorization', `Bearer ${token}`) // Adiciona o token JWT ao cabeçalho
-      .send({ name: 'John Updated' });
+            const response = await request(app)
+                .put(`/api/users/${userId}`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ name: 'John Updated' });
 
-    expect(response.status).toBe(200);
-    expect(response.body.name).toBe('John Updated');
-  });
+            
 
-  // Teste: Atualizar um usuário sem autenticação
-  it('Deve retornar erro 401 ao tentar atualizar um usuário sem autenticação', async () => {
-    const response = await request(app)
-      .put(`/api/users/${userId}`)
-      .send({ name: 'John Updated' }); // Sem token JWT
+            expect(response.status).toBe(200);
+            expect(response.body.name).toBe('John Updated');
+        });
 
-    expect(response.status).toBe(401);
-    expect(response.body.error).toBe('Acesso negado. Token não fornecido.');
-  });
+        it('Deve atualizar a senha de um usuário com autenticação', async () => {
+            const newPassword = 'newPassword456';
+            const response = await request(app)
+                .put(`/api/users/${userId}`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ password: newPassword });
+          
+            expect(response.status).toBe(200);
 
-  // Teste: Excluir um usuário por ID (com autenticação)
-  it('Deve excluir um usuário por ID com autenticação', async () => {
-    const response = await request(app)
-      .delete(`/api/users/${userId}`)
-      .set('Authorization', `Bearer ${token}`); // Adiciona o token JWT ao cabeçalho
+            const updatedUser = await User.findById(userId);
+            const isPasswordValid = await bcrypt.compare(newPassword, updatedUser.password);
+            expect(isPasswordValid).toBe(true);
+        });
 
-    expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Usuário excluído com sucesso.');
+        it('Deve retornar erro 400 ao tentar atualizar com dados inválidos', async () => {
+            const response = await request(app)
+                .put(`/api/users/${userId}`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ name: '' });
 
-    const deletedUser = await User.findById(userId);
-    expect(deletedUser).toBeNull();
-  });
+            expect(response.status).toBe(400);
+            expect(response.body.error).toBeDefined();
+        });
+    });
+    
+    // =============================
+    // 🗑️ Exclusão de Usuário
+    // =============================
+    describe('Exclusão de Usuário', () => {
+        it('Deve excluir um usuário por ID com autenticação', async () => {
+            const response = await request(app)
+                .delete(`/api/users/${userId}`)
+                .set('Authorization', `Bearer ${token}`);
 
-  // Teste: Excluir um usuário sem autenticação
-  it('Deve retornar erro 401 ao tentar excluir um usuário sem autenticação', async () => {
-    const response = await request(app)
-      .delete(`/api/users/${userId}`); // Sem token JWT
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Usuário excluído com sucesso.');
 
-    expect(response.status).toBe(401);
-    expect(response.body.error).toBe('Acesso negado. Token não fornecido.');
-  });
+            const deletedUser = await User.findById(userId);
+            expect(deletedUser).toBeNull();
+        });
 
-  // Teste: Criar um usuário com dados inválidos
-  it('Deve retornar erro 400 ao tentar criar um usuário com dados inválidos', async () => {
-    const response = await request(app)
-      .post('/api/users')
-      .send({
-        name: '', // Nome vazio
-        email: 'invalid-email', // Email inválido
-        password: 'short' // Senha curta
-      });
+        it('Deve retornar erro 404 ao tentar excluir um usuário inexistente', async () => {
+            const invalidUserId = '64b8f5c5e5d8b5f8e5d8b5f8';
+            const response = await request(app)
+                .delete(`/api/users/${invalidUserId}`)
+                .set('Authorization', `Bearer ${token}`);
 
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBeDefined();
-  });
-
-  // Teste: Criar um usuário com email duplicado
-  it('Deve retornar erro 400 ao tentar criar um usuário com email duplicado', async () => {
-    const response = await request(app)
-      .post('/api/users')
-      .send({
-        name: 'John Doe',
-        email: 'john@example.com', // Email já registrado
-        password: 'password123'
-      });
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBe('Email já registrado.');
-  });
-
-  // Teste: Criar um usuário com email duplicado
-  it('Deve retornar erro 400 ao tentar criar um usuário com email duplicado', async () => {
-    const response = await request(app)
-      .post('/api/users')
-      .send({
-        name: 'John Doe',
-        email: 'john@example.com', // Email já registrado
-        password: 'password123'
-      });
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBe('Email já registrado.');
-  });
-
-  // Teste: Atualizar senha de um usuário
-  it('Deve atualizar a senha de um usuário com autenticação', async () => {
-    const newPassword = 'newPassword456';
-    const response = await request(app)
-      .put(`/api/users/${userId}`)
-      .set('Authorization', `Bearer ${token}`) // Adiciona o token JWT ao cabeçalho
-      .send({ password: newPassword });
-
-    expect(response.status).toBe(200);
-
-    // Verifica se a senha foi atualizada no banco de dados
-    const updatedUser = await User.findById(userId);
-    const isPasswordValid = await bcrypt.compare(newPassword, updatedUser.password);
-    expect(isPasswordValid).toBe(true);
-  });
-
-  // Teste: Atualizar usuário com dados inválidos
-  it('Deve retornar erro 400 ao tentar atualizar um usuário com dados inválidos', async () => {
-    const response = await request(app)
-      .put(`/api/users/${userId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ name: '' }); // Nome vazio
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBeDefined();
-  });
-
-  // Teste: Excluir um usuário inexistente
-  it('Deve retornar erro 404 ao tentar excluir um usuário inexistente', async () => {
-    const invalidUserId = '64b8f5c5e5d8b5f8e5d8b5f8'; // ID inexistente
-    const response = await request(app)
-      .delete(`/api/users/${invalidUserId}`)
-      .set('Authorization', `Bearer ${token}`); // Adiciona o token JWT ao cabeçalho
-
-    expect(response.status).toBe(404);
-    expect(response.body.error).toBe('Usuário não encontrado.');
-  });
+            expect(response.status).toBe(404);
+            expect(response.body.error).toBe('Usuário não encontrado.');
+        });
+    });
 });

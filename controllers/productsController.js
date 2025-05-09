@@ -5,7 +5,7 @@ exports.createProduct = async (req, res) => {
     try {
         const { userId } = req.body;
 
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (product) return res.status(400).json({ message: "Produto já existe para este usuário" });
 
         const newProduct = new Products({ userId, products: [] });
@@ -22,7 +22,7 @@ exports.getProducts = async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         res.status(200).json({ products: product.products });
@@ -36,7 +36,7 @@ exports.deleteProduct = async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const product = await Products.findOneAndDelete({ userId });
+        const product = await Products.findOneAndDelete({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         res.status(200).json({ message: "Produto excluído com sucesso" });

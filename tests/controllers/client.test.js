@@ -1,133 +1,190 @@
 const request = require("supertest");
 const app = require("../../app");
-const ClientZap = require('../../models/clientModels');
+const createClientModel = require("../../models/clientModels");
 
-// Limpar o banco de dados antes de cada teste
+// Cria o modelo dinamicamente usando a variável de ambiente
+const ClientZap = createClientModel(process.env.COLLECTION_NAME_CLIENT_PEDIDOS);
+
+// Limpa a coleção antes de cada teste
 beforeEach(async () => {
     await ClientZap.deleteMany({});
 });
 
-describe("POST /api/client", () => {
+describe("Testes das Rotas de Cliente", () => {
 
-    it("Criando novo cliente do zap", async () => {
-        const response = await request(app)
-            .post("/api/client")
-            .send({
-                phone: "5511987654321"
-            });
-        expect(response.status).toBe(201);
-        expect(response.body.phone).toBe("5511987654321");
+    // =============================
+    // 🧾 Cadastro de Cliente
+    // =============================
+    describe("POST /api/client", () => {
+        it("Deve criar um novo cliente com sucesso", async () => {
+            const response = await request(app)
+                .post("/api/client")
+                .send({
+                    phone: "5511987654321"
+                });
+
+            expect(response.status).toBe(201);
+            expect(response.body.phone).toBe("5511987654321");
+        });
+
+        it("Deve retornar 400 se o campo 'phone' não for enviado", async () => {
+            const response = await request(app)
+                .post("/api/client")
+                .send({
+                    name: "João",
+                    address: "Rua A",
+                });
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toBe("O campo 'phone' é obrigatório");
+        });
     });
 
-    it("Deve retornar 400 sem phone", async () => {
-        const response = await request(app)
-            .post("/api/client")
-            .send({
+    // =============================
+    // 🔍 Listagem de Clientes
+    // =============================
+    describe("GET /api/client", () => {
+        it("Deve retornar uma lista vazia quando não há clientes", async () => {
+            const response = await request(app).get("/api/client");
+
+            expect(response.status).toBe(200);
+            expect(response.body).toEqual([]);
+        });
+
+        it("Deve retornar todos os clientes cadastrados", async () => {
+            await ClientZap.create({
+                phone: "5511987654321",
                 name: "João",
-                address: "Rua A",
             });
 
-        expect(response.status).toBe(400);
-        expect(response.body.error).toBe("O campo 'phone' é obrigatório");
-    });
-});
+            const response = await request(app).get("/api/client");
 
-// Teste: Listar todos os usuários
-describe("GET /api/client", () => {
-    it("should return an empty array if no clientZaps exist", async () => {
-        const response = await request(app).get("/api/client");
-
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual([]);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(1);
+            expect(response.body[0].phone).toBe("5511987654321");
+        });
     });
 
-    it("should return all clientZaps", async () => {
-        await ClientZap.create({
-            phone: "5511987654321",
-            name: "João",
+    // =============================
+    // 🔍 Buscar Cliente por Telefone
+    // =============================
+    describe("GET /api/client/:phone", () => {
+        it("Deve retornar um cliente pelo número de telefone", async () => {
+            const cliente = await ClientZap.create({
+                phone: "5511987654321",
+                name: "João"
+            });
+
+            const response = await request(app).get(`/api/client/${cliente.phone}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.phone).toBe(cliente.phone);
+            expect(response.body.name).toBe(cliente.name);
         });
 
-        const response = await request(app).get("/api/client");
+        it("Deve retornar 404 se o cliente não for encontrado", async () => {
+            const response = await request(app).get("/api/client/telefone-invalido");
 
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(1);
-        expect(response.body[0].phone).toBe("5511987654321");
+            expect(response.status).toBe(404);
+            expect(response.body.error).toBe("cliente não encontrado");
+        });
     });
-});
 
-// Teste: Obter usuário por ID
-describe("GET /api/client/:id", () => {
-    it("should return a clientZap by ID", async () => {
-        const clientZap = await ClientZap.create({
+    // =============================
+    // 🛠️ Atualizar Cliente
+    // =============================
+    describe("PUT /api/client/:phone", () => {
+        it("Deve atualizar as informações do cliente", async () => {
+            const cliente = await ClientZap.create({
+                phone: "5511987654321",
+                name: "João",
+            });
 
-            phone: "5511987654321",
-            name: "João",
+            const response = await request(app)
+                .put(`/api/client/${cliente.phone}`)
+                .send({ name: "Maria" });
+
+            expect(response.status).toBe(200);
+            expect(response.body.name).toBe("Maria");
         });
 
-        const response = await request(app).get(`/api/client/${clientZap.phone}`);
+        it("Deve retornar 404 ao tentar atualizar cliente inexistente", async () => {
+            const response = await request(app)
+                .put("/api/client/telefone-invalido")
+                .send({ name: "Maria" });
 
-        expect(response.status).toBe(200);
-        expect(response.body.phone).toBe("5511987654321");
+            expect(response.status).toBe(404);
+            expect(response.body.error).toBe("cliente não encontrado");
+        });
     });
 
-    it("should return 404 if clientZap is not found", async () => {
-        const response = await request(app).get("/api/client/invalid-id");
+    // =============================
+    // 🗑️ Excluir Cliente
+    // =============================
+    describe("DELETE /api/client/:phone", () => {
+        it("Deve excluir um cliente com sucesso", async () => {
+            const cliente = await ClientZap.create({
+                phone: "5511987654321",
+                name: "João",
+            });
 
-        expect(response.status).toBe(404);
-        expect(response.body.error).toBe("cliente não encontrado");
-    });
-});
+            const response = await request(app).delete(`/api/client/${cliente.phone}`);
 
-// Teste: Atualizar usuário
-describe("PUT /api/client/:id", () => {
-    it("should update a clientZap", async () => {
-        const clientZap = await ClientZap.create({
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe("cliente excluído com sucesso");
 
-            phone: "5511987654321",
-            name: "João",
+            const clienteExcluido = await ClientZap.findOne({ phone: cliente.phone });
+            expect(clienteExcluido).toBeNull();
         });
 
-        const response = await request(app)
-            .put(`/api/client/${clientZap.phone}`)
-            .send({ name: "Maria" });
+        it("Deve retornar 404 ao tentar excluir cliente inexistente", async () => {
+            const response = await request(app).delete("/api/client/telefone-invalido");
 
-        expect(response.status).toBe(200);
-        expect(response.body.name).toBe("Maria");
+            expect(response.status).toBe(404);
+            expect(response.body.error).toBe("cliente não encontrado");
+        });
     });
 
-    it("should return 404 if clientZap is not found", async () => {
-        const response = await request(app)
-            .put("/api/client/invalid-id")
-            .send({ name: "Maria" });
+    // =============================
+    // 📜 Histórico do Cliente
+    // =============================
+    describe("POST /api/client/history/:phone", () => {
+        it("Deve adicionar uma entrada ao histórico do cliente", async () => {
+            // Primeiro cria o cliente
+            const clienteResposta = await request(app)
+                .post("/api/client")
+                .send({
+                    phone: "987654321",
+                    name: "Maria Souza",
+                    address: "Rua B, 456"
+                });
 
-        expect(response.status).toBe(404);
-        expect(response.body.error).toBe("cliente não encontrado");
-    });
-});
+            expect(clienteResposta.status).toBe(201);
 
-// Teste: Excluir usuário
-describe("DELETE /api/client/:id", () => {
-    it("should delete a clientZap", async () => {
-        const clientZap = await ClientZap.create({
+            // Adiciona uma entrada no histórico
+            const historicoResposta = await request(app)
+                .post("/api/client/history/987654321")
+                .send({
+                    role: "assistant",
+                    content: "Olá Maria! Como posso ajudar?"
+                });
 
-            phone: "5511987654321",
-            name: "João",
+            expect(historicoResposta.status).toBe(200);
+            expect(historicoResposta.body.history).toHaveLength(1);
+            expect(historicoResposta.body.history[0].role).toBe("assistant");
+            expect(historicoResposta.body.history[0].content).toBe("Olá Maria! Como posso ajudar?");
         });
 
-        const response = await request(app).delete(`/api/client/${clientZap.phone}`);
+        it("Deve retornar 404 se tentar adicionar histórico para cliente inexistente", async () => {
+            const resposta = await request(app)
+                .post("/api/client/history/000000000")
+                .send({
+                    role: "user",
+                    content: "Cliente inexistente"
+                });
 
-        expect(response.status).toBe(200);
-        expect(response.body.message).toBe("cliente excluído com sucesso");
-
-        const deletedclientZap = await ClientZap.findOneAndDelete(clientZap.phone);
-        expect(deletedclientZap).toBeNull();
+            expect(resposta.status).toBe(404);
+            expect(resposta.body.error).toBe("Cliente não encontrado.");
+        });
     });
-
-    it("should return 404 if clientZap is not found", async () => {
-        const response = await request(app).delete("/api/client/invalid-id");
-
-        expect(response.status).toBe(404);
-        expect(response.body.error).toBe("cliente não encontrado");
-    });
-
 });

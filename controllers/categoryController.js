@@ -5,7 +5,7 @@ exports.createCategory = async (req, res) => {
     try {
         const { userId, category } = req.body;
 
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({ userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         // Verificar se a categoria já existe
@@ -26,7 +26,7 @@ exports.getCategories = async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         res.status(200).json({ categories: product.products });
@@ -40,7 +40,7 @@ exports.editCategory = async (req, res) => {
         const { userId, oldCategory, newCategory } = req.body;
 
         // Verificar se o usuário existe
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         // Verificar se a categoria antiga existe
@@ -65,7 +65,7 @@ exports.deleteCategory = async (req, res) => {
     try {
         const { userId, category } = req.params;
 
-        const product = await Products.findOne({ userId });
+        const product = await Products.findOne({  userId: userId });
         if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
 
         const categoryIndex = product.products.findIndex(cat => cat.category === category);

@@ -12,7 +12,7 @@ describe("Testes para o controlador de itens", () => {
     name = "smartphone";
 
     // Criar um produto fictício no banco de dados para ser usado nos testes
-    const product = await Products.create({
+    await Products.create({
       userId,
       products: [
         {
@@ -32,11 +32,12 @@ describe("Testes para o controlador de itens", () => {
         },
       ],
     });
-
   });
 
-
-  describe("POST /items/:userId/:category", () => {
+  // =============================
+  // ➕ POST /items/:userId/:category - Adicionar item
+  // =============================
+  describe("POST /api/items/:userId/:category", () => {
     it("deve criar um novo item em uma categoria específica", async () => {
       const res = await request(app)
         .post(`/api/items/${userId}/${category}`)
@@ -49,7 +50,7 @@ describe("Testes para o controlador de itens", () => {
           image: "notebook.jpg",
           stock: 5,
         });
-  
+
       expect(res.statusCode).toBe(201);
       expect(res.body.message).toBe("Item criado com sucesso");
       expect(res.body.item.name).toBe("notebook");
@@ -72,8 +73,11 @@ describe("Testes para o controlador de itens", () => {
       expect(res.body.message).toBe("Categoria não encontrada");
     });
   });
-  
-  describe("GET /items/:userId/:category", () => {
+
+  // =============================
+  // 🔍 GET /items/:userId/:category - Buscar itens
+  // =============================
+  describe("GET /api/items/:userId/:category", () => {
     it("deve retornar todos os itens de uma categoria específica", async () => {
       const res = await request(app).get(`/api/items/${userId}/${category}`);
 
@@ -89,16 +93,18 @@ describe("Testes para o controlador de itens", () => {
       expect(res.body.message).toBe("Categoria não encontrada");
     });
   });
-  
-  describe("PUT /items/:userId/:category/:name", () => {
+
+  // =============================
+  // 🛠️ PUT /items/:userId/:category/:name - Atualizar item
+  // =============================
+  describe("PUT /api/items/:userId/:category/:name", () => {
     it("deve atualizar um item específico", async () => {
       const res = await request(app)
         .put(`/api/items/${userId}/${category}/${name}`)
         .send({ price: 900, stock: 5 });
 
-        expect(res.body.message).toBe("Item atualizado com sucesso");
       expect(res.statusCode).toBe(200);
-      
+      expect(res.body.message).toBe("Item atualizado com sucesso");
       expect(res.body.item.price).toBe(900);
       expect(res.body.item.stock).toBe(5);
     });
@@ -113,13 +119,15 @@ describe("Testes para o controlador de itens", () => {
     });
   });
 
-  describe("DELETE /items/:userId/:category/:name", () => {
+  // =============================
+  // 🗑️ DELETE /items/:userId/:category/:name - Excluir item
+  // =============================
+  describe("DELETE /api/items/:userId/:category/:name", () => {
     it("deve excluir um item específico", async () => {
       const res = await request(app).delete(`/api/items/${userId}/${category}/${name}`);
       
-      expect(res.body.message).toBe("Item excluído com sucesso");
       expect(res.statusCode).toBe(200);
-      
+      expect(res.body.message).toBe("Item excluído com sucesso");
     });
 
     it("não deve excluir um item se ele não existir", async () => {
@@ -129,5 +137,4 @@ describe("Testes para o controlador de itens", () => {
       expect(res.body.message).toBe("Item não encontrado");
     });
   });
-  
 });
