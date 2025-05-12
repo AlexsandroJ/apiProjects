@@ -23,11 +23,11 @@ exports.getProducts = async (req, res) => {
         const { userId } = req.params;
 
         const product = await Products.findOne({  userId: userId });
-        if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
+        if (!product) return res.status(404).json({ message: "productsController: Usuário não encontrado" });
 
         res.status(200).json({ products: product.products });
     } catch (error) {
-        res.status(500).json({ message: "Erro ao obter produtos", error: error.message });
+        res.status(500).json({ message: "productsController: Erro ao obter produtos", error: error.message });
     }
 };
 
@@ -37,10 +37,10 @@ exports.deleteProduct = async (req, res) => {
         const { userId } = req.params;
 
         const product = await Products.findOneAndDelete({  userId: userId });
-        if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
+        if (!product) return res.status(404).json({ message: "productsController: Usuário não encontrado" });
 
-        res.status(200).json({ message: "Produto excluído com sucesso" });
+        res.status(200).json({ message: "productsController: Produto excluído com sucesso" });
     } catch (error) {
-        res.status(500).json({ message: "Erro ao excluir produto", error: error.message });
+        res.status(500).json({ message: "productsController: Erro ao excluir produto", error: error.message });
     }
 };

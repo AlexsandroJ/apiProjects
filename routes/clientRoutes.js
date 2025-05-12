@@ -247,4 +247,46 @@ router.delete("/client/:phone", clientControllers.deleteClient);
  */
 router.post("/client/history/:phone", clientControllers.addHistoryToClient);
 
+/**
+ * @swagger
+ * /client/history/{phone}:
+ *   get:
+ *     summary: Retorna o histórico de interações do cliente
+ *     tags: [Clients]
+ *     parameters:
+ *       - in: path
+ *         name: phone
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Número de telefone do cliente
+ *     responses:
+ *       200:
+ *         description: Histórico retornado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 phone:
+ *                   type: string
+ *                 history:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       role:
+ *                         type: string
+ *                       content:
+ *                         type: string
+ *                       timestamp:
+ *                         type: string
+ *                         format: date-time
+ *       404:
+ *         description: Cliente não encontrado
+ *       500:
+ *         description: Erro interno no servidor
+ */
+router.get("/client/history/:phone", clientControllers.getHistoryByClientPhone);
+
 module.exports = router;

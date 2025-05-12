@@ -12,7 +12,7 @@ connectDB()
         app.listen(PORT, () => {
             console.log(`Servidor rodando na porta ${PORT}`);
             addData();
-            
+
         });
     })
     .catch((err) => {
@@ -20,15 +20,39 @@ connectDB()
     });
 
 async function addData() {
+    const email = 'alex@example.com';
+    const password = 'password321';
+    const citys = [
+        {
+            name: "Recife",
+            neighborhoods: [
+                { name: "Boa Viagem" },
+                { name: "Casa Forte" },
+                { name: "Graças" },
+                { name: "Santo Amaro" },
+            ]
+        },
+        {
+            name: "Jaboatão dos Guararapes",
+            neighborhoods: [
+                { name: "Cajueiro Seco" },
+                { name: "Candeias" },
+                { name: "Curado" },
+                { name: "Prazeres" },
+                { name: "Piedade" },
+                { name: "Jordão" },
+            ]
+        }
+    ];
     const response = await axios.post(`${uri}/api/users`, {
         name: 'Alex',
-        email: 'alex@example.com',
-        password: 'password321'
+        email: email,
+        password: password
         //phone: [client.info.wid.user]
     });
-    const { userId, email } = response.data;
+    const { userId } = response.data;
     const UserId = userId;
-    console.log("_id:",userId);
+    console.log("_id:", userId);
     let category;
     await axios.post(`${uri}/api/products`, { userId: UserId })
 
@@ -55,5 +79,48 @@ async function addData() {
             }
         }
     }
+
+    const session = await axios.post(`${uri}/api/sessions/login`, {
+        email: email,
+        password: password
+    });
+
+    for (const element of citys) {
+        await axios.post(`${uri}/api/cities/${UserId}`, // URL
+            { // Dados no corpo da requisição
+                name: element.name,
+                neighborhoods: element.neighborhoods
+            },
+            { // Configurações (headers, etc)
+                headers: {
+                    Authorization: `Bearer ${session.data.token}`
+                }
+            }).
+            then(res => {
+                //console.log('Resposta da API:', res.data);
+            })
+            .catch(err => {
+                console.error('Erro na requisição:', err.response?.data || err.message);
+            });
+    }
     console.log("Produtos de Teste Inseridos");
+    //console.log("Token: ", session.data.token);
+
+
+    const resp = await axios.get(`${uri}/api/cities/${UserId}`, // URL
+        { // Configurações (headers, etc)
+            headers: {
+                Authorization: `Bearer ${session.data.token}`
+            }
+        }).
+        then(res => {
+            //console.log('Resposta da API:', res.data.cities);
+            
+        })
+        .catch(err => {
+            console.error('Erro na requisição:', err.response?.data || err.message);
+        });
+
+        //console.log(resp.data.cities);
+    
 }

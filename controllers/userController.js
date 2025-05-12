@@ -13,7 +13,7 @@ exports.createUser = [
       // Verificar se o email já existe
       const existingEmail = await User.findOne({ email });
       if (existingEmail) {
-        return res.status(400).json({ error: 'Email já registrado.' });
+        return res.status(400).json({ error: 'userController: Email já registrado.' });
       }
 
       // Criptografa a senha antes de salvar no banco de dados
@@ -23,7 +23,7 @@ exports.createUser = [
 
       // Retorna o ID do usuário criado
       res.status(201).json({
-        message: 'Usuário criado com sucesso.',
+        message: 'userController: Usuário criado com sucesso.',
         userId: savedUser._id // Retorna o ID do usuário
         //email: savedUser.email // Pode retornar outros campos relevantes
       });
@@ -51,7 +51,7 @@ exports.getUserById = async (req, res) => {
     // Verifica se o usuário existe
     const user = await User.findById(id).select('name email'); // apenas name e emai na resposta
     if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
+      return res.status(404).json({ error: 'userController: Usuário não encontrado.' });
     }
 
     res.status(200).json(user);
@@ -70,7 +70,7 @@ exports.updateUser = [
       // Verifica se o usuário existe
       const user = await User.findById(id).select('name email');
       if (!user) {
-        return res.status(404).json({ error: 'Usuário não encontrado.' });
+        return res.status(404).json({ error: 'userController: Usuário não encontrado.' });
       }
 
       // Atualiza os dados do usuário
@@ -98,13 +98,11 @@ exports.deleteUser = async (req, res) => {
     // Verifica se o usuário existe
     const user = await User.findByIdAndDelete(id);
     if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
+      return res.status(404).json({ error: 'userController: Usuário não encontrado.' });
     }
 
-    res.status(200).json({ message: 'Usuário excluído com sucesso.' });
+    res.status(200).json({ message: 'userController: Usuário excluído com sucesso.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
-// Moficações do phone

@@ -13,7 +13,7 @@ exports.createOrUpdateProfile = [
       // Verifica se o usuário existe
       const user = await User.findById(userId);
       if (!user) {
-        return res.status(404).json({ error: 'Usuário não encontrado.' });
+        return res.status(404).json({ error: 'profileController: Usuário não encontrado.' });
       }
 
       // Verifica se o perfil já existe
@@ -40,7 +40,7 @@ exports.getProfileByUserId = async (req, res) => {
     // Verifica se o perfil existe
     const profile = await Profile.findOne({ userId }).populate('userId', 'name email');
     if (!profile) {
-      return res.status(404).json({ error: 'Perfil não encontrado.' });
+      return res.status(404).json({ error: 'profileController: Perfil não encontrado.' });
     }
 
     res.status(200).json(profile);
@@ -57,10 +57,10 @@ exports.deleteProfileByUserId = async (req, res) => {
     // Verifica se o perfil existe
     const profile = await Profile.findOneAndDelete({ userId });
     if (!profile) {
-      return res.status(404).json({ error: 'Perfil não encontrado.' });
+      return res.status(404).json({ error: 'profileController: Perfil não encontrado.' });
     }
 
-    res.status(200).json({ message: 'Perfil excluído com sucesso.' });
+    res.status(200).json({ message: 'profileController: Perfil excluído com sucesso.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -51,20 +51,20 @@ exports.updateItem = async (req, res) => {
         const updates = req.body;
 
         const product = await Products.findOne({  userId: userId });
-        if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
+        if (!product) return res.status(404).json({ message: "itemController: Usuário não encontrado" });
 
         const cat = product.products.find(cat => cat.category === category);
-        if (!cat) return res.status(404).json({ message: "Categoria não encontrada" });
+        if (!cat) return res.status(404).json({ message: "itemController: Categoria não encontrada" });
 
         const item = cat.items.find(i => i.name === name);
-        if (!item) return res.status(404).json({ message: "Item não encontrado" });
+        if (!item) return res.status(404).json({ message: "itemController: Item não encontrado" });
 
         Object.assign(item, updates);
         await product.save();
 
-        res.status(200).json({ message: "Item atualizado com sucesso", item });
+        res.status(200).json({ message: "itemController: Item atualizado com sucesso", item });
     } catch (error) {
-        res.status(500).json({ message: "Erro ao atualizar item", error: error.message });
+        res.status(500).json({ message: "itemController: Erro ao atualizar item", error: error.message });
     }
 };
 
@@ -74,19 +74,19 @@ exports.deleteItem = async (req, res) => {
         const { userId, category, name } = req.params;
 
         const product = await Products.findOne({  userId: userId });
-        if (!product) return res.status(404).json({ message: "Usuário não encontrado" });
+        if (!product) return res.status(404).json({ message: "itemController: Usuário não encontrado" });
 
         const cat = product.products.find(cat => cat.category === category);
-        if (!cat) return res.status(404).json({ message: "Categoria não encontrada" });
+        if (!cat) return res.status(404).json({ message: "itemController: Categoria não encontrada" });
 
         const itemIndex = cat.items.findIndex(item => item.name === name);
-        if (itemIndex === -1) return res.status(404).json({ message: "Item não encontrado" });
+        if (itemIndex === -1) return res.status(404).json({ message: "itemController: Item não encontrado" });
 
         cat.items.splice(itemIndex, 1);
         await product.save();
 
-        res.status(200).json({ message: "Item excluído com sucesso" });
+        res.status(200).json({ message: "itemController: Item excluído com sucesso" });
     } catch (error) {
-        res.status(500).json({ message: "Erro ao excluir item", error: error.message });
+        res.status(500).json({ message: "itemController: Erro ao excluir item", error: error.message });
     }
 };

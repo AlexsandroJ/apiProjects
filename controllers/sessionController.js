@@ -38,7 +38,7 @@ exports.login = async (req, res) => {
     await Session.create({ userId: user._id, token, expiresAt });
 
     // Retorna o token ao cliente
-    res.status(200).json({ token });
+    res.status(200).json({ token, userId: user._id });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
