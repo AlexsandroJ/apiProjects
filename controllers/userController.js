@@ -8,7 +8,7 @@ exports.createUser = [
   validateRequest(createUserSchema),
   async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, phone } = req.body;
 
       // Verificar se o email já existe
       const existingEmail = await User.findOne({ email });
@@ -24,8 +24,8 @@ exports.createUser = [
       // Retorna o ID do usuário criado
       res.status(201).json({
         message: 'userController: Usuário criado com sucesso.',
-        userId: savedUser._id // Retorna o ID do usuário
-        //email: savedUser.email // Pode retornar outros campos relevantes
+        userId: savedUser._id, // Retorna o ID do usuário
+        phone: savedUser.phone // Pode retornar outros campos relevantes
       });
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -49,7 +49,7 @@ exports.getUserById = async (req, res) => {
     const { id } = req.params;
 
     // Verifica se o usuário existe
-    const user = await User.findById(id).select('name email'); // apenas name e emai na resposta
+    const user = await User.findById(id).select('name email phone'); // apenas name e emai na resposta
     if (!user) {
       return res.status(404).json({ error: 'userController: Usuário não encontrado.' });
     }

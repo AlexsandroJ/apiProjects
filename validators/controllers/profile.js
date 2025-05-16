@@ -14,6 +14,9 @@ const profileSchema = Joi.object({
   }),
   location: Joi.string().optional().allow('').messages({
     'string.base': 'O campo "location" deve ser uma string.'
+  }),
+  age: Joi.string().optional().allow('').messages({
+    'string.base': 'O campo "age" deve ser uma string.'
   })
 });
 

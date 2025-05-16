@@ -29,6 +29,8 @@ const router = express.Router();
  *                 type: string
  *               password:
  *                 type: string
+ *               phone:
+ *                 type: string
  *             example:
  *               name: John Doe
  *               email: john@example.com
