@@ -1,6 +1,6 @@
 const createClientModel = require("../models/clientModels");
 require("dotenv").config();
-const ClientZap = createClientModel(process.env.COLLECTION_NAME_CLIENT_PEDIDOS);
+const ClientZap = createClientModel(process.env.COLLECTION_NAME_CLIENT_ZAP);
 
 // Criar cliente
 exports.createClient = async (req, res) => {

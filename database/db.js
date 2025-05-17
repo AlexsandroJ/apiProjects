@@ -35,9 +35,19 @@ const disconnectDB = async () => {
     if (mongoServer) {
       await mongoServer.stop();
       console.log('MongoDB em memória desconectado.');
+      // Limpa todas as coleções após cada teste
+
+      const collections = mongoose.connection.collections;
+
+      for (const key in collections) {
+        const collection = collections[key];
+        await collection.deleteMany({});
+      }
+
     } else {
       console.log('MongoDB real desconectado.');
     }
+
   } catch (error) {
     console.error('Erro ao desconectar do MongoDB:', error);
   }

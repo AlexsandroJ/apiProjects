@@ -4,6 +4,7 @@ const { connectDB, disconnectDB } = require('./database/db');
 const dataTest = require('./util/productsTest');
 const app = require('./app');
 
+
 const PORT = process.env.PORT;
 const uri = `${process.env.API_URL}:${process.env.PORT}`;
 
@@ -95,6 +96,25 @@ async function addData() {
         })
         .catch(err => {
             console.error('Erro na requisição profile:', err.response?.data || err.message);
+        });
+
+    await axios.post(`${uri}/api/subscriptions`,
+        {
+            userId: userId,
+            plan: 'basic',
+            endDate: new Date(Date.now() + 86400000).toISOString(),
+            status: 'active'
+        },
+        { // Configurações (headers, etc)
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }).
+        then(res => {
+            //console.log('Resposta /profiles:', res.data);
+        })
+        .catch(err => {
+            console.error('Erro na requisição subscriptions:', err.response?.data || err.message);
         });
 
     let category;

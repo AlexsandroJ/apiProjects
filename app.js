@@ -11,6 +11,10 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const itemsRoutes = require('./routes/itemsRoutes');
 const cityRoutes = require('./routes/cityRoutes');
 const authRoutes = require('./routes/authRoutes');
+
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const ordensRoutes = require('./routes/ordensRoutes');
+
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
@@ -26,6 +30,9 @@ app.use(cors({
 // Rotas
 app.use('/api', authRoutes);
 
+app.use('/api', ordensRoutes);
+
+
 // Testadas
 app.use('/api', userRoutes);
 app.use('/api', profileRoutes);
@@ -35,6 +42,7 @@ app.use('/api', productsRoutes);
 app.use('/api', cityRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api', itemsRoutes);
+app.use('/api', subscriptionRoutes);
 
 swagger(app);
 
