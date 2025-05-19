@@ -1,6 +1,6 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const app = require("../../app"); // Importe sua aplicação Express
+const {app} = require("../../app"); // Importe sua aplicação Express
 const Products = require("../../models/productsModels");
 
 // Limpar o banco de dados após cada teste

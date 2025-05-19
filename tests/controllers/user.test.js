@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('../../app');
+const {app} = require('../../app');
 const User = require('../../models/userModels');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -63,7 +63,7 @@ describe('Testes das Rotas de Usuário', () => {
                 });
 
             expect(response.status).toBe(400);
-            expect(response.body.error).toBe('Email já registrado.');
+            expect(response.body.error).toBe('userController: Email já registrado.');
         });
     });
   
@@ -145,7 +145,7 @@ describe('Testes das Rotas de Usuário', () => {
                 .set('Authorization', `Bearer ${token}`);
 
             expect(response.status).toBe(200);
-            expect(response.body.message).toBe('Usuário excluído com sucesso.');
+            expect(response.body.message).toBe('userController: Usuário excluído com sucesso.');
 
             const deletedUser = await User.findById(userId);
             expect(deletedUser).toBeNull();
@@ -158,7 +158,7 @@ describe('Testes das Rotas de Usuário', () => {
                 .set('Authorization', `Bearer ${token}`);
 
             expect(response.status).toBe(404);
-            expect(response.body.error).toBe('Usuário não encontrado.');
+            expect(response.body.error).toBe('userController: Usuário não encontrado.');
         });
     });
 });

@@ -1,6 +1,6 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const app = require("../../app"); // Certifique-se de que seu servidor esteja configurado corretamente
+const {app} = require("../../app"); // Certifique-se de que seu servidor esteja configurado corretamente
 const Products = require("../../models/productsModels");
 
 describe("Testes para o controlador de itens", () => {

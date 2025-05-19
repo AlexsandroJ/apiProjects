@@ -1,24 +1,38 @@
-
 const axios = require('axios');
 const { connectDB, disconnectDB } = require('./database/db');
 const dataTest = require('./util/productsTest');
-const app = require('./app');
+const { app, http, io } = require('./app'); // app e http já têm o io injetado
 
-
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3001;
 const uri = `${process.env.API_URL}:${process.env.PORT}`;
 
-connectDB()
-    .then(() => {
-        app.listen(PORT, () => {
-            console.log(`Servidor rodando na porta ${PORT}`);
-            addData();
 
-        });
-    })
-    .catch((err) => {
-        console.error('Erro ao iniciar o servidor:', err);
+
+// 💡 Aqui vai o seu código de conexão do socket
+io.on('connection', (socket) => {
+  console.log('🔌 Cliente conectado: ',socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Cliente desconectado');
+  });
+
+  // Você pode escutar eventos personalizados aqui também
+  socket.on('atualizacao', (data) => {
+    console.log('📩 Mensagem do cliente:', data.type);
+    io.emit('atualizacao', data);
+  });
+});
+
+connectDB()
+  .then(() => {
+    http.listen(PORT, () => {
+      console.log(`🟢 Servidor rodando na porta ${PORT}`);
+      addData();
     });
+  })
+  .catch((err) => {
+    console.error('❌ Erro ao iniciar o servidor:', err);
+  });
 
 async function addData() {
     const email = 'alex@example.com';
@@ -162,6 +176,6 @@ async function addData() {
                 console.error('Erro na requisição:', err.response?.data || err.message);
             });
     }
-    console.log("Produtos de Teste Inseridos");
-    console.log("_id:", userId);
+    console.log(`📊​ Dados de teste Inseridos`);
+    console.log(`🆔 ID:`,userId);
 }

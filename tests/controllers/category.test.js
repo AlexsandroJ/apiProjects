@@ -1,7 +1,7 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
 const User = require('../../models/userModels');
-const app = require("../../app");
+const {app} = require("../../app");
 const Products = require("../../models/productsModels");
 
 describe("Testes das Rotas de Categoria", () => {

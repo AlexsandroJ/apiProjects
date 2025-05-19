@@ -1,7 +1,7 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const app = require('../../app');
+const {app} = require('../../app');
 
 describe('Teste da Rota de Cidades com MongoDB em Memória', () => {
     let userId;
