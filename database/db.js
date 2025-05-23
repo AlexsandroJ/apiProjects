@@ -9,7 +9,7 @@ let mongoServer;
 const connectDB = async () => {
   try {
     // Verifica se estamos usando o banco em memória
-    const useInMemoryDB = process.env.DEV === 'true';
+    const useInMemoryDB = process.env.DEV;
 
     if (useInMemoryDB) {
       // Inicia o MongoDB em memória
