@@ -34,10 +34,8 @@
     "qrcode-terminal": "^0.12.0",
     "querystring": "^0.2.1",
     "socket.io": "^4.8.1",
-    "starkbank": "^2.31.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "whatsapp-web.js": "^1.26.0"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "axios-mock-adapter": "^2.1.0",

@@ -4,7 +4,7 @@ const dataTest = require('./util/productsTest');
 const { app, http, io } = require('./app'); // app e http já têm o io injetado
 
 const PORT = process.env.PORT || 3001;
-const uri = `${process.env.API_URL}:${process.env.PORT}`;
+const uri = `${process.env.API_URL}`;
 
 
 
