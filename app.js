@@ -39,10 +39,11 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const ordensRoutes = require('./routes/ordensRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 
+const tenantRoutes = require('./routes/tenantRoutes');
+
 // Rotas
 app.use('/api', authRoutes);
-app.use('/api', ordensRoutes);
-app.use('/api', webhookRoutes);
+app.use('/api', tenantRoutes);
 
 // Testadas
 app.use('/api', userRoutes);
@@ -54,6 +55,8 @@ app.use('/api', cityRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api', itemsRoutes);
 app.use('/api', subscriptionRoutes);
+app.use('/api', ordensRoutes);
+app.use('/api', webhookRoutes);
 
 // Swagger
 swagger(app);
