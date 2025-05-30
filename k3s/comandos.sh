@@ -1,45 +1,4 @@
 
-#docker-compose.yml
-version: '3.8'
-
-services:
-  k3s:
-    image: rancher/k3s:v1.28.2-k3s1
-    container_name: k3s-dashboard
-    privileged: true
-    ports:
-      - "6443:6443"           # Acesso à API do Kubernetes
-      - "30000-32767:30000-32767"  # Portas para NodePort services (útil para o dashboard)
-    volumes:
-      - k3s-server:/var/lib/rancher/k3s
-      - ./dashboard-setup.sh:/scripts/dashboard-setup.sh
-    environment:
-      - K3S_KUBECONFIG_MODE=644
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        # Inicia o k3s em background
-        /usr/local/bin/k3s server &
-        
-        # Aguarda o serviço iniciar
-        sleep 10
-        
-        # Executa o script de instalação do dashboard
-        chmod +x /scripts/dashboard-setup.sh && /scripts/dashboard-setup.sh
-        
-        # Mantém o container ativo
-        tail -f /dev/null
-
-volumes:
-  k3s-server:
-
-
-
-# dashboard-setup.sh
-
-#!/bin/bash
-
 # Instala o Kubernetes Dashboard
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml 
 
@@ -105,81 +64,9 @@ mv kubectl /usr/local/bin/
 kubectl version --client
 
 
-
-# k3d
-curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-
-# Criar cluster sem Traefik
-k3d cluster create my-cluster \
-  --api-port 6443 \
-  --k3s-arg "--disable=traefik@server:0"
-
-# Obter kubeconfig
-k3d kubeconfig get my-cluster > kubeconfig.yaml
-
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml 
-
-
-kubectl create serviceaccount meu-sa -n default
-
-# role-binding.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: sa-role-binding
-  namespace: default
-subjects:
-- kind: ServiceAccount
-  name: meu-sa
-  namespace: default
-roleRef:
-  kind: ClusterRole
-  name: view
-  apiGroup: rbac.authorization.k8s.io
-
-  kubectl apply -f role-binding.yaml
-
-
-
-
-# melhor ate o momento 
-
-# Instale o k3d:
-curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh  | bash
-
 apk add --no-cache kubectl openrc
 
-k3d cluster create meu-cluster \
-  --api-port 6443 \
-  -p 80:80@loadbalancer \
-  -p 443:443@loadbalancer \
-  --registry-create k3d-registry
 
-# Obter kubeconfig
-k3d kubeconfig get my-cluster > kubeconfig.yaml
-
-
-k3d cluster create meuucluster \
-  --api-port 8443 \
-  --k3s-arg "--kube-api-bypass-authentication"
-
-k3d cluster create meucluster \
-  --api-port 6443 \
-  -p 80:80@loadbalancer \
-  -p 443:443@loadbalancer \
-  --args @all="--kube-api-bypass-authentication"
-
-
-
-#!/bin/bash
-
-# Define o kubeconfig
-export KUBECONFIG=$(pwd)/kubeconfig.yaml
-
-# Inicia o kubectl proxy para acesso seguro via HTTP
-kubectl proxy --port=8080 &  
-PROXY_PID=$!
-sleep 5  # Espera o proxy iniciar
 
 # Verifica conexão com o cluster
 echo "🔍 Verificando conexão com o cluster..."
@@ -214,34 +101,110 @@ curl -s -X POST http://localhost:644/api/v1/namespaces/default/pods \
 echo -e "\n👀 Verificando se o Pod foi criado..."
 kubectl get pod nginx-pod
 
-# Limpeza
-kill $PROXY_PID
-rm nginx-pod.json
-
-
-client-key-data: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSVBnS0hxK0tiWG1xamhmdmFqRjcyOHNFbDhMN2tqa0JwZlJubkk4L1lZTDlvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFaG9tZWNBTHpXOHhEaHdvU2FlRm42TVlTcThiUjlYZ3Z3SWZTTFBERW4rNzRHcHBvcDlacQpoaTlQMjcyUVZLQVBDK1B6MmNIUGZGMnJhWFU1RWFwRWtBPT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
 
 
 # Instale o K3S (Configuração do Master Node)
-curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" sh -s -
+curl -sfL https://get.k3s.io | sh -s -
+
+systemctl status k3s
+
+# Onde encontrar tokens válidos?
+# a) Token do bootstrap (geralmente usado por outros nodes):
+#   Localizado em: /var/lib/rancher/k3s/server/node-token
+#   Este é o token usado para adicionar novos nós ao cluster, não serve para autenticar na API como usuário final .
+# b) Tokens de ServiceAccount:
+#   Tokens associados a um ServiceAccount são armazenados como Secrets.
 
 # Após a instalação, pegue o Token do Node Master
 cat /etc/rancher/k3s/server/node-token
 
+sudo cat /var/lib/rancher/k3s/server/node-token
+
+#   Passo 1: Criar o ServiceAccount
+#Crie um arquivo chamado sa-admin.yaml com o seguinte conteúdo:
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-sa
+  namespace: default
+
+kubectl apply -f sa-admin.yaml
+
+#   Passo 2: Criar uma ClusterRoleBinding para dar permissões totais
+#Agora vamos vincular esse ServiceAccount ao cluster-admin (role built-in com todas as permissões):
+
+# Crie o arquivo crb-admin.yaml:
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-sa-crb
+subjects:
+- kind: ServiceAccount
+  name: admin-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
+kubectl apply -f crb-admin.yaml
+
+kubectl get serviceaccount
+
+kubectl exec test-pod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
+
+
+
+# Para listar os secrets:
+kubectl get secrets -A
+
+# E para obter o token específico:
+kubectl describe secret  k3s-serving -n kube-system
 
 # token do k3s do WSL
 K10c7ef99bb7b4c33bd644d1b1953f7af85791bcc7a004335017f498377b0cdcd34::server:00cdcc29d81d9b24656c1f1ed2dcd014
 
+# token AWS
+# k3s local
+K1056da6363f3b0f03d54fcf3c99a1cafc7b4009bb14c515b7e1619e82a23ff2f28::server:e06914e570f3c0ae60090a43cd286ffe
+
+# token da Acconunt
+eyJhbGciOiJSUzI1NiIsImtpZCI6InE5MnJ3aFh1UDhpT3FyTWhzMTNrNWpZa2VvbDFwS0JyY1JXbURzNTBGY28ifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiLCJrM3MiXSwiZXhwIjoxNzgwMTUxMDI4LCJpYXQiOjE3NDg2MTUwMjgsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiMmUzMjVlN2QtMWVkOC00ZDJkLWE5YjEtOGI5NWUzYmY4NTgzIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJkZWZhdWx0Iiwibm9kZSI6eyJuYW1lIjoiaXAtMTcyLTMxLTg4LTE5IiwidWlkIjoiNTI4MzU0Y2MtYzA5OC00YTdjLTkzOGUtZTlkNTEzMWMzOTQ2In0sInBvZCI6eyJuYW1lIjoidGVzdC1wb2QiLCJ1aWQiOiIyZGIxZDNjMC1jMzQ5LTQ0MGMtOWJiOC1kNjgyYWY4ZThkYzcifSwic2VydmljZWFjY291bnQiOnsibmFtZSI6ImFkbWluLXNhIiwidWlkIjoiZDRlNzVmY2QtZmIxMi00NmJkLTk5NzAtM2Q4ZTE0MmI0MjAyIn0sIndhcm5hZnRlciI6MTc0ODYxODYzNX0sIm5iZiI6MTc0ODYxNTAyOCwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6YWRtaW4tc2EifQ.Qxe6X5jvhaqNjpJGHqn7Idu-aUCMR8pJsZzxAeg5PSeo6FNgCvi7EvWSY3aWevBsuESVRbHzMpz7TeEzvBdsvPdxK2zi4-5JaG1vvNRMHO6manRhC0g_EjcikIIL2D5-bU8NDf1umI7Z88ZEBC9fXU-s8rGCSuYSQnMX2rRt8kfyw6f_8xxc0RyETPxXHbf1ryLdHkSqxj2qRjtNo1Dty-t1-tqPKYAS-t2g1P44fUPnP77wgWWaot0mTE9Tt4S7sBKZXTpI955OaQVnjylCeiKBclu57UQ-umNN3Cwp1YZAKGNFRCOZmn6-V_IyQDqmmO_xeaLGUhf73TDwA-POxA
+
+# certificado
+kubectl exec test-pod -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+MIIBeDCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NDg2MTQ1NzAwHhcNMjUwNTMwMTQxNjEwWhcNMzUwNTI4MTQxNjEwWjAjMSEwHwYDVQDDBhrM3Mtc2VydmVyLWNhQDE3NDg2MTQ1NzAwWTATBgcqhkjOPQIBBggqkjOPQMBBwNCAARvVbrFZ5uJMP/Jskc4GTxG790XndKFYQRMSLAVTAdY+mkj8dbv54mXrMQ+9/In/aWs7OjH7wD8mVnYF8O3p5po0IwQDAOBgNVHQ8BAf8EBAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUcxWtYMoceUqEXyrdq0+AbauhyPcwCgYIKoZIzj0EAwIDSQAwRgIhAJGnjbChovY/dDDU4CnJ6+Cm1alpg2SSuS/Li4zXBAKyAiEA7gwS67zZHjAk/Rcyrm82zwgkwfGpcfRY0E58Y3VMjoM=
+
+
+
 kubectl proxy &
 
+curl -k https://52.70.50.93:6443/api/v1/namespaces \
+  --header "Authorization: Bearer D15F11261803E967DF163781E1213B13A8B24C65" \
+  
 
-curl -k https://192.168.1.172:6443/api/v1/namespaces \
-  --header "Authorization: Bearer K10c7ef99bb7b4c33bd644d1b1953f7af85791bcc7a004335017f498377b0cdcd34::server:00cdcc29d81d9b24656c1f1ed2dcd014"
+curl -k https://52.70.50.93:6443/api/v1/namespaces/default/pods \
+  --header "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InE5MnJ3aFh1UDhpT3FyTWhzMTNrNWpZa2VvbDFwS0JyY1JXbURzNTBGY28ifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiLCJrM3MiXSwiZXhwIjoxNzgwMTUxMDI4LCJpYXQiOjE3NDg2MTUwMjgsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiMmUzMjVlN2QtMWVkOC00ZDJkLWE5YjEtOGI5NWUzYmY4NTgzIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJkZWZhdWx0Iiwibm9kZSI6eyJuYW1lIjoiaXAtMTcyLTMxLTg4LTE5IiwidWlkIjoiNTI4MzU0Y2MtYzA5OC00YTdjLTkzOGUtZTlkNTEzMWMzOTQ2In0sInBvZCI6eyJuYW1lIjoidGVzdC1wb2QiLCJ1aWQiOiIyZGIxZDNjMC1jMzQ5LTQ0MGMtOWJiOC1kNjgyYWY4ZThkYzcifSwic2VydmljZWFjY291bnQiOnsibmFtZSI6ImFkbWluLXNhIiwidWlkIjoiZDRlNzVmY2QtZmIxMi00NmJkLTk5NzAtM2Q4ZTE0MmI0MjAyIn0sIndhcm5hZnRlciI6MTc0ODYxODYzNX0sIm5iZiI6MTc0ODYxNTAyOCwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6YWRtaW4tc2EifQ.Qxe6X5jvhaqNjpJGHqn7Idu-aUCMR8pJsZzxAeg5PSeo6FNgCvi7EvWSY3aWevBsuESVRbHzMpz7TeEzvBdsvPdxK2zi4-5JaG1vvNRMHO6manRhC0g_EjcikIIL2D5-bU8NDf1umI7Z88ZEBC9fXU-s8rGCSuYSQnMX2rRt8kfyw6f_8xxc0RyETPxXHbf1ryLdHkSqxj2qRjtNo1Dty-t1-tqPKYAS-t2g1P44fUPnP77wgWWaot0mTE9Tt4S7sBKZXTpI955OaQVnjylCeiKBclu57UQ-umNN3Cwp1YZAKGNFRCOZmn6-V_IyQDqmmO_xeaLGUhf73TDwA-POxA"
 
   # rota de pods http://localhost:8001/api/v1/namespaces/default/pods/meu-cu
 
   # rotda de depoloymets http://localhost:8001/apis/apps/v1/namespaces/default/deployments/nginx-http://localhost:8001/apis/apps/v1/namespaces/default/deployments
 
-  kubectl get deployments
+kubectl get deployments
 kubectl get services
 kubectl get pods
+
+# teste conexão, retorna versão do kubernets
+curl -k https://52.70.50.93:6443/version \
+  --insecure
+
+# Teste o token com curl (acessando a API do Kubernetes):
+curl -vk https://3.84.197.170:6443/api  \
+  --header "Authorization: Bearer K1056da6363f3b0f03d54fcf3c99a1cafc7b4009bb14c515b7e1619e82a23ff2f28::server:e06914e570f3c0ae60090a43cd286ffe" \
+  --insecure
+
+
+
+  

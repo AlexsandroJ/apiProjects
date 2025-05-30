@@ -1,165 +1,117 @@
-// controllers/tenantController.js
-const k8s = require('@kubernetes/client-node');
-const { coreV1Api, appsV1Api } = require('../k3s/k8sClient');
-const NAMESPACE = 'meu-namespace';
+const axios = require('axios');
+const https = require('https');
+const { CLUSTER_API_URI_SERVER, CLUSTER_TOKEN, NAMESPACE } = process.env;
 
-function getDeploymentName(tenantId) {
-    return `tenant-${tenantId}-deployment`;
-}
 
-exports.startTenantPod = async (req, res) => {
-    const { tenantId, imageName } = req.body;
+// Cria um agente HTTPS que ignora certificados SSL
+const agent = new https.Agent({
+    rejectUnauthorized: false // Isso ignora certificados inválidos/autoassinados
+});
 
-    if (!tenantId || !imageName) {
-        return res.status(400).json({ error: 'tenantId e imageName são obrigatórios' });
-    }
+const api = axios.create({
+    baseURL: CLUSTER_API_URI_SERVER,
+    headers: {
+        Authorization: `Bearer ${CLUSTER_TOKEN}`,
+        'Content-Type': 'application/json'
+    },
+    httpsAgent: agent,
+});
 
-    const deploymentName = getDeploymentName(tenantId);
-
-    const container = new k8s.V1Container();
-    container.name = deploymentName;
-    container.image = imageName;
-    container.imagePullPolicy = 'IfNotPresent';
-
-    const templateSpec = new k8s.V1PodSpec();
-    templateSpec.containers = [container];
-
-    const template = new k8s.V1PodTemplateSpec();
-    template.spec = templateSpec;
-
-    const deploymentSpec = new k8s.V1DeploymentSpec();
-    deploymentSpec.selector = { matchLabels: { app: deploymentName } };
-    deploymentSpec.template = template;
-    deploymentSpec.replicas = 1;
-
-    const metadata = new k8s.V1ObjectMeta();
-    metadata.name = deploymentName;
-    metadata.labels = { app: deploymentName };
-
-    const deployment = new k8s.V1Deployment();
-    deployment.apiVersion = 'apps/v1';
-    deployment.kind = 'Deployment';
-    deployment.metadata = metadata;
-    deployment.spec = deploymentSpec;
-
+exports.tesConection = async (req, res) => {
     try {
-        console.log(typeof(NAMESPACE))
-        await appsV1Api.createNamespacedDeployment(NAMESPACE, deployment);
-        return res.status(201).json({ message: 'Deployment criado', deploymentName });
-    } catch (error) {
-        console.error('Erro ao criar deployment:', error.response?.body || error.message);
-        return res.status(500).json({ error: 'Falha ao criar deployment' });
+        const response = await api.get(`/version`);
+        res.status(200).json(response.data);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
 };
 
-exports.scaleTenantPod = async (req, res) => {
-    const { tenantId, replicas } = req.body;
-
-    if (!tenantId || !replicas || replicas < 1) {
-        return res.status(400).json({ error: 'tenantId e replicas >= 1 são obrigatórios' });
-    }
-
-    const deploymentName = getDeploymentName(tenantId);
-
+exports.listPods = async (req, res) => {
     try {
-        const resp = await appsV1Api.readNamespacedDeployment(deploymentName, NAMESPACE);
-        const deployment = resp.body;
-
-        deployment.spec.replicas = replicas;
-
-        await appsV1Api.replaceNamespacedDeployment(deploymentName, NAMESPACE, deployment);
-
-        return res.json({ message: `${replicas} réplicas criadas`, deploymentName });
-    } catch (error) {
-        console.error('Erro ao escalar deployment:', error.response?.body || error.message);
-        return res.status(500).json({ error: 'Falha ao escalar deployment' });
+        const response = await api.get(`api/v1/namespaces/${NAMESPACE}/pods`);
+        res.status(200).json(response.data.items);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
 };
 
-exports.removeTenantPod = async (req, res) => {
-    const { tenantId } = req.body;
-
-    if (!tenantId) {
-        return res.status(400).json({ error: 'tenantId é obrigatório' });
-    }
-
-    const deploymentName = getDeploymentName(tenantId);
-
+exports.listDeployments = async (req, res) => {
     try {
-        await appsV1Api.deleteNamespacedDeployment(deploymentName, NAMESPACE, {});
-        return res.json({ message: 'Deployment removido', deploymentName });
-    } catch (error) {
-        console.error('Erro ao remover deployment:', error.response?.body || error.message);
-        return res.status(500).json({ error: 'Falha ao remover deployment' });
+        const response = await api.get(`/apis/apps/v1/namespaces/${NAMESPACE}/deployments`);
+        res.status(200).json(response.data.items);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
 };
 
-exports.getTenantPods = async (req, res) => {
-    const { tenantId } = req.params;
-
-    if (!tenantId) {
-        return res.status(400).json({ error: 'tenantId é obrigatório' });
-    }
-
-    const labelSelector = `app=tenant-${tenantId}-deployment`;
-
+exports.getDeployment = async (req, res) => {
+    const { name } = req.params;
     try {
-        const response = await coreV1Api.listNamespacedPod(NAMESPACE, undefined, undefined, labelSelector);
-        const pods = response.body.items.map(pod => ({
-            name: pod.metadata?.name,
-            status: pod.status.phase,
-            ip: pod.status.podIP,
-        }));
-
-        return res.json({ pods });
-    } catch (error) {
-        console.error('Erro ao buscar pods:', error.response?.body || error.message);
-        return res.status(500).json({ error: 'Falha ao buscar pods' });
+        const response = await api.get(`/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`);
+        res.status(200).json(response.data);
+    } catch (err) {
+        return res.status(404).json({ error: 'Deployment não encontrado' });
     }
 };
 
-exports.testK8sConnection = async (req, res) => {
-
+exports.createDeployment = async (req, res) => {
+    const deployment = req.body;
     try {
-        console.log(NAMESPACE)
-        const podsResponse = await coreV1Api.listNamespacedPod(NAMESPACE);
-
-        const podCount = podsResponse.body.items.length;
-        const podNames = podsResponse.body.items.map(pod => pod.metadata?.name);
-
-        //console.log(`✅ Conectado ao cluster Kubernetes.`);
-        //console.log(`Namespace: ${namespace}`);
-        //console.log(`Encontrados ${podCount} pods no namespace "${namespace}"`);
-
-        return res.json({
-            connected: true,
-            namespace,
-            podCount,
-            podNames,
-        });
-    } catch (error) {
-        /*
-        console.error('❌ Erro ao conectar ao cluster:', {
-            message: error.message,
-            stack: error.stack,
-            response: error.response?.body || 'Sem resposta do servidor',
-        });
-        */
-        return res.status(500).json({
-            connected: false,
-            error: 'Falha ao conectar ao cluster Kubernetes',
-            details: error.response?.body?.message || error.message,
-        });
+        const response = await api.post(`/apis/apps/v1/namespaces/${NAMESPACE}/deployments`, deployment);
+        res.status(201).json(response.data);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
 };
 
-exports.listNamespaces = async (req, res) => {
+exports.exposeService = async (req, res) => {
+    const service = req.body;
     try {
-        const response = await coreV1Api.listNamespace();
-        const namespaces = response.body.items.map(ns => ns.metadata.name);
-        return res.json({ namespaces });
-    } catch (error) {
-        //console.error('Erro ao listar namespaces:', error.message);
-        return res.status(500).json({ error: 'Falha ao listar namespaces' });
+        await api.post(`/api/v1/namespaces/${NAMESPACE}/services`, service);
+        res.status(201).json({ message: 'tenantController: Serviço exposto com sucesso!' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
 };
+
+exports.listServices = async (req, res) => {
+  try {
+    const response = await api.get(`/api/v1/namespaces/${NAMESPACE}/services`);
+    res.status(200).json(response.data.items || []);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.deleteServices = async (req, res) => {
+    const { name } = req.params;
+    try {
+        await api.delete(`/api/v1/namespaces/${NAMESPACE}/services/${name}`);
+        res.status(200).json({ message: 'tenantController: Services excluído com sucesso' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+exports.updateDeployment = async (req, res) => {
+    const { name } = req.params;
+    const deployment = req.body;
+    try {
+        const response = await api.put(`/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`, deployment);
+        res.status(200).json(response.data);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+exports.deleteDeployment = async (req, res) => {
+    const { name } = req.params;
+    try {
+        await api.delete(`/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`);
+        res.status(200).json({ message: 'tenantController: Deployment excluído com sucesso' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
